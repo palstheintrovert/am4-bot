@@ -23,14 +23,10 @@ jobs:
         python -m pip install --upgrade pip
         pip install selenium webdriver-manager
         
-    - name: Install Chrome
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y chromium-browser chromium-chromedriver
-        
     - name: Run AM4 Bot
       env:
         AM4_EMAIL: ${{ secrets.AM4_EMAIL }}
         AM4_PASSWORD: ${{ secrets.AM4_PASSWORD }}
       run: |
+        python -c "from webdriver_manager.chrome import ChromeDriverManager; ChromeDriverManager().install()"
         python am4-bot.py
