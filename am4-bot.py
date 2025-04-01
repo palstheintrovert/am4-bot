@@ -3,7 +3,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.options import Options
 from time import sleep
 from datetime import datetime
 import os
@@ -12,29 +12,28 @@ class AM4Bot():
     
     def __init__(self):
         # Initialize Chrome options
-        options = webdriver.ChromeOptions()
-        options.add_argument('--no-sandbox')
-        options.add_argument('--disable-dev-shm-usage')
-        options.add_argument('--headless')  # Run in headless mode for server
+        chrome_options = Options()
+        chrome_options.add_argument('--no-sandbox')
+        chrome_options.add_argument('--disable-dev-shm-usage')
+        chrome_options.add_argument('--headless')
+        chrome_options.add_argument('--disable-gpu')
+        chrome_options.add_argument('--window-size=1920,1080')
         
-        # Initialize driver with WebDriver Manager
-        self.driver = webdriver.Chrome(
-            service=Service(ChromeDriverManager().install()),
-            options=options
-        )
-        self.driver.implicitly_wait(10)
-
+        # Set up ChromeDriver service
+        service = Service(executable_path='/usr/bin/chromedriver')
+        
+        # Initialize driver
+        self.driver = webdriver.Chrome(service=service, options=chrome_options)
+        self.driver.implicitly_wait(15)
     
     def login(self):
         try:
-            print(f"{self.current_time()} - Attempting login...")
-            
-            # Go to website
+            print(f"{self.current_time()} - Logging in...")
             self.driver.get('https://www.airlinemanager.com/')
-            sleep(2)
+            sleep(5)
             
             # Click login button
-            fb_btn = WebDriverWait(self.driver, 10).until(
+            fb_btn = WebDriverWait(self.driver, 20).until(
                 EC.element_to_be_clickable((By.XPATH, '//button[contains(text(), "Log in")]'))
             )
             fb_btn.click()
@@ -44,28 +43,23 @@ class AM4Bot():
             username_in = WebDriverWait(self.driver, 10).until(
                 EC.presence_of_element_located((By.XPATH, '//*[@id="lEmail"]'))
             )
-            username_in.send_keys(os.getenv('AM4_EMAIL', 'YOUR_EMAIL'))  # Use environment variable or default
+            username_in.send_keys(os.getenv('AM4_EMAIL', 'YOUR_EMAIL'))
             
             pw_in = self.driver.find_element(By.XPATH, '//*[@id="lPass"]')
-            pw_in.send_keys(os.getenv('AM4_PASSWORD', 'YOUR_PASSWORD'))  # Use environment variable or default
+            pw_in.send_keys(os.getenv('AM4_PASSWORD', 'YOUR_PASSWORD'))
             sleep(1)
     
             # Click login button
             login_btn = self.driver.find_element(By.XPATH, '//*[@id="btnLogin"]')
-            login_btn.click() 
-            sleep(4)
+            login_btn.click()
+            sleep(5)
             
             # Close popup if exists
-            try:
-                close_btn = self.driver.find_element(By.XPATH, '//*[@id="flightInfo"]/div[4]/span')
-                close_btn.click()
-            except:
-                pass
-                
+            self.close_popups()
             print(f"{self.current_time()} - Login successful")
             
         except Exception as e:
-            print(f"Login failure: {str(e)}")
+            print(f"Login failed: {str(e)}")
             raise
     
     def fuel_check(self):
@@ -73,11 +67,11 @@ class AM4Bot():
             print(f"{self.current_time()} - Checking fuel...")
             
             # Click fuel button
-            fuel_btn = WebDriverWait(self.driver, 10).until(
+            fuel_btn = WebDriverWait(self.driver, 20).until(
                 EC.element_to_be_clickable((By.XPATH, '//div[contains(@class, "fuel") and contains(text(), "Fuel")]'))
             )
             fuel_btn.click()
-            sleep(2)
+            sleep(3)
             
             # Get fuel price
             fuel_price = self.driver.find_element(By.XPATH, '//*[@id="fuelMain"]/div/div[1]/span[2]/b').text
@@ -97,7 +91,7 @@ class AM4Bot():
                 
                 fuel_buy = self.driver.find_element(By.XPATH, '//*[@id="fuelMain"]/div/div[7]/div/button[2]')
                 fuel_buy.click()
-                sleep(2)
+                sleep(3)
                 
                 # Verify purchase
                 new_amount = int(self.driver.find_element(By.XPATH, '//*[@id="holding"]').text.replace(",", ""))
@@ -107,7 +101,7 @@ class AM4Bot():
                     print("Not enough money to buy fuel")
             
             # Close panel
-            self.driver.find_element(By.XPATH, '//*[@id="popup"]/div/div/div[1]/div/span').click()
+            self.close_popups()
             
         except Exception as e:
             print(f"Fuel check error: {str(e)}")
@@ -119,7 +113,7 @@ class AM4Bot():
             
             # Click fuel button first
             self.driver.find_element(By.XPATH, '//div[contains(@class, "fuel")]').click()
-            sleep(1)
+            sleep(2)
             
             # Switch to CO2 tab
             co2_btn = WebDriverWait(self.driver, 10).until(
@@ -145,7 +139,7 @@ class AM4Bot():
                 
                 co2_buy = self.driver.find_element(By.XPATH, '//*[@id="co2Main"]/div/div[8]/div/button[2]')
                 co2_buy.click()
-                sleep(2)
+                sleep(3)
                 
                 # Verify purchase
                 new_amount = int(self.driver.find_element(By.XPATH, '//*[@id="holding"]').text.replace(",", ""))
@@ -155,7 +149,7 @@ class AM4Bot():
                     print("Not enough money to buy CO2")
             
             # Close panel
-            self.driver.find_element(By.XPATH, '//*[@id="popup"]/div/div/div[1]/div/span').click()
+            self.close_popups()
             
         except Exception as e:
             print(f"CO2 check error: {str(e)}")
@@ -166,23 +160,24 @@ class AM4Bot():
             print(f"{self.current_time()} - Departing flights...")
             
             # Click status button
-            status_btn = WebDriverWait(self.driver, 10).until(
+            status_btn = WebDriverWait(self.driver, 20).until(
                 EC.element_to_be_clickable((By.XPATH, '//div[contains(text(), "Status")]'))
             )
             status_btn.click()
-            sleep(2)
+            sleep(3)
             
             # Filter landed flights
             landed_btn = self.driver.find_element(By.XPATH, '//button[contains(text(), "Landed")]')
             landed_btn.click()
-            sleep(2)
+            sleep(3)
             
             # Depart all
             depart_all_btn = self.driver.find_element(By.XPATH, '//*[@id="listDepartAll"]/div/button[2]')
             depart_all_btn.click()
-            sleep(4)
+            sleep(5)
             
             print("Flights departed")
+            self.close_popups()
             
         except Exception as e:
             print(f"Departure error: {str(e)}")
@@ -193,21 +188,21 @@ class AM4Bot():
             print(f"{self.current_time()} - Checking repairs...")
             
             # Click maintenance button
-            maint_btn = WebDriverWait(self.driver, 10).until(
+            maint_btn = WebDriverWait(self.driver, 20).until(
                 EC.element_to_be_clickable((By.XPATH, '//div[contains(text(), "Maintenance")]'))
             )
             maint_btn.click()
-            sleep(2)
+            sleep(3)
             
             # Click planes tab
             planes_btn = self.driver.find_element(By.XPATH, '//button[contains(text(), "Planes")]')
             planes_btn.click()
-            sleep(2)
+            sleep(3)
             
             # Click bulk repair
             bulk_btn = self.driver.find_element(By.XPATH, '//button[contains(text(), "Bulk")]')
             bulk_btn.click()
-            sleep(2)
+            sleep(3)
             
             # Select repair option
             select = self.driver.find_element(By.XPATH, '//select')
@@ -221,9 +216,10 @@ class AM4Bot():
             # Confirm repair
             repair_btn = self.driver.find_element(By.XPATH, '//button[contains(text(), "Repair")]')
             repair_btn.click()
-            sleep(2)
+            sleep(3)
             
             print("Aircrafts sent for repair")
+            self.close_popups()
             
         except Exception as e:
             print(f"Repair error: {str(e)}")
@@ -232,11 +228,13 @@ class AM4Bot():
     def close_popups(self):
         try:
             self.driver.find_element(By.XPATH, '//*[@id="flightInfo"]/div[4]/span').click()
+            sleep(1)
         except:
             pass
         
         try:
             self.driver.find_element(By.XPATH, '//*[@id="popup"]/div/div/div[1]/div/span').click()
+            sleep(1)
         except:
             pass
     
