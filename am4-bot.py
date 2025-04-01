@@ -2,6 +2,8 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 from time import sleep
 from datetime import datetime
 import os
@@ -13,13 +15,15 @@ class AM4Bot():
         options = webdriver.ChromeOptions()
         options.add_argument('--no-sandbox')
         options.add_argument('--disable-dev-shm-usage')
+        options.add_argument('--headless')  # Run in headless mode for server
         
-        # For headless running (useful for server deployment)
-        # options.add_argument('--headless')
-        
-        # Initialize driver
-        self.driver = webdriver.Chrome(executable_path='chromedriver', options=options)
+        # Initialize driver with WebDriver Manager
+        self.driver = webdriver.Chrome(
+            service=Service(ChromeDriverManager().install()),
+            options=options
+        )
         self.driver.implicitly_wait(10)
+
     
     def login(self):
         try:
