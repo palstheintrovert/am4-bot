@@ -19,10 +19,10 @@ class AM4Bot():
         chrome_options.add_argument('--disable-gpu')
         chrome_options.add_argument('--window-size=1920,1080')
         
-        # Set up ChromeDriver service
+        # Set up ChromeDriver service - UPDATED FOR GITHUB ACTIONS
         service = Service(executable_path='/usr/bin/chromedriver')
         
-        # Initialize driver
+        # Initialize driver - UPDATED SELENIUM 4 SYNTAX
         self.driver = webdriver.Chrome(service=service, options=chrome_options)
         self.driver.implicitly_wait(15)
     
