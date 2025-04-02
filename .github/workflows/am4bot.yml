@@ -26,10 +26,10 @@ jobs:
         
     - name: Verify installations
       run: |
-        google-chrome --version
-        chromedriver --version
-        python --version
-        pip --version
+        echo "Chrome version: $(google-chrome --version)"
+        echo "ChromeDriver version: $(chromedriver --version)"
+        echo "Python version: $(python --version)"
+        echo "Pip version: $(pip --version)"
         
     - name: Install Python dependencies
       run: |
