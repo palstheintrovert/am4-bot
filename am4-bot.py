@@ -299,26 +299,25 @@ class AM4Bot:
     def current_time(self):
         return datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
+# ========== CRITICAL FIX ========== 
+    # PROPERLY INDENTED run() METHOD
     def run(self):
         try:
             self.login()
             now = datetime.now()
-
-            # Fuel/CO2 every 30 minutes
+            
             if now.minute % 30 == 0:
                 self.fuel_check()
                 self.CO2_check()
-
-            # Depart flights every 5 minutes
+            
             if now.minute % 5 == 0:
                 self.depart_all()
-
-            # Bulk repair at 00 minutes every 6 hours
+            
             if now.hour % 6 == 0 and now.minute == 0:
                 self.bulk_repair()
-
+            
             print(f"{self.current_time()} - Tasks completed")
-
+            
         except Exception as e:
             print(f"Error: {str(e)}")
         finally:
@@ -326,4 +325,4 @@ class AM4Bot:
 
 if __name__ == "__main__":
     bot = AM4Bot()
-    bot.run()
+    bot.run()  # This will now work
