@@ -11,18 +11,13 @@ import os
 class AM4Bot():
     
     def __init__(self):
-        # Initialize Chrome options
         chrome_options = Options()
         chrome_options.add_argument('--no-sandbox')
         chrome_options.add_argument('--disable-dev-shm-usage')
         chrome_options.add_argument('--headless')
-        chrome_options.add_argument('--disable-gpu')
         chrome_options.add_argument('--window-size=1920,1080')
         
-        # Set up ChromeDriver service - UPDATED AS PER GITHUB'S SUGGESTION
         service = Service(executable_path='/usr/bin/chromedriver')
-        
-        # Initialize driver with correct Selenium 4 syntax
         self.driver = webdriver.Chrome(service=service, options=chrome_options)
         self.driver.implicitly_wait(15)
     
@@ -30,31 +25,33 @@ class AM4Bot():
         try:
             print(f"{self.current_time()} - Logging in...")
             self.driver.get('https://www.airlinemanager.com/')
-            sleep(5)
             
-            # Click login button
-            fb_btn = WebDriverWait(self.driver, 20).until(
-                EC.element_to_be_clickable((By.XPATH, '//button[contains(text(), "Log in")]'))
+            # Open signup modal
+            play_free_btn = WebDriverWait(self.driver, 20).until(
+                EC.element_to_be_clickable((By.XPATH, '//button[contains(@class, "play-now")]'))
             )
-            fb_btn.click()
-            sleep(2)
-    
+            play_free_btn.click()
+            
+            # Switch to login modal
+            login_switch_btn = WebDriverWait(self.driver, 20).until(
+                EC.element_to_be_clickable((By.XPATH, '//div[@class="login-container"]//button[contains(text(), "Log in")]'))
+            )
+            login_switch_btn.click()
+            
             # Enter credentials
-            username_in = WebDriverWait(self.driver, 10).until(
-                EC.presence_of_element_located((By.XPATH, '//*[@id="lEmail"]'))
+            username_in = WebDriverWait(self.driver, 20).until(
+                EC.presence_of_element_located((By.ID, 'lEmail'))
             )
             username_in.send_keys(os.getenv('AM4_EMAIL', 'YOUR_EMAIL'))
             
-            pw_in = self.driver.find_element(By.XPATH, '//*[@id="lPass"]')
+            pw_in = self.driver.find_element(By.ID, 'lPass')
             pw_in.send_keys(os.getenv('AM4_PASSWORD', 'YOUR_PASSWORD'))
-            sleep(1)
-    
-            # Click login button
-            login_btn = self.driver.find_element(By.XPATH, '//*[@id="btnLogin"]')
-            login_btn.click()
-            sleep(5)
             
-            # Close popup if exists
+            # Submit login
+            login_btn = self.driver.find_element(By.ID, 'btnLogin')
+            login_btn.click()
+            
+            WebDriverWait(self.driver, 20).until(EC.url_contains("/#/"))
             self.close_popups()
             print(f"{self.current_time()} - Login successful")
             
@@ -225,15 +222,9 @@ class AM4Bot():
             print(f"Repair error: {str(e)}")
             self.close_popups()
     
-    def close_popups(self):
+   def close_popups(self):
         try:
-            self.driver.find_element(By.XPATH, '//*[@id="flightInfo"]/div[4]/span').click()
-            sleep(1)
-        except:
-            pass
-        
-        try:
-            self.driver.find_element(By.XPATH, '//*[@id="popup"]/div/div/div[1]/div/span').click()
+            self.driver.find_element(By.XPATH, '//div[contains(@class, "close")]').click()
             sleep(1)
         except:
             pass
@@ -244,26 +235,25 @@ class AM4Bot():
     def run(self):
         try:
             self.login()
+            now = datetime.now()
             
-            while True:
-                # Run checks every 30 minutes
-                if datetime.now().minute % 30 == 0:
-                    self.fuel_check()
-                    self.CO2_check()
-                
-                # Depart flights every 5 minutes
-                if datetime.now().minute % 5 == 0:
-                    self.depart_all()
-                
-                # Run repairs every 6 hours
-                if datetime.now().hour % 6 == 0 and datetime.now().minute == 0:
-                    self.bulk_repair()
-                
-                print(f"{self.current_time()} - Waiting...")
-                sleep(60)  # Check every minute
-                
+            # Fuel/CO2 every 30 minutes
+            if now.minute % 30 == 0:
+                self.fuel_check()
+                self.CO2_check()
+            
+            # Depart flights every 5 minutes
+            if now.minute % 5 == 0:
+                self.depart_all()
+            
+            # Bulk repair at 00 minutes every 6 hours
+            if now.hour % 6 == 0 and now.minute == 0:
+                self.bulk_repair()
+            
+            print(f"{self.current_time()} - Tasks completed")
+            
         except Exception as e:
-            print(f"Fatal error: {str(e)}")
+            print(f"Error: {str(e)}")
         finally:
             self.driver.quit()
 
