@@ -289,41 +289,40 @@ class AM4Bot:
             print(f"Repair error: {str(e)}")
             self.close_popups()
 
+    def close_popups(self):
+        try:
+            self.driver.find_element(By.XPATH, '//div[contains(@class, "close")]').click()
+            sleep(1)
+        except:
+            pass
 
-def close_popups(self):
-    try:
-        self.driver.find_element(By.XPATH, '//div[contains(@class, "close")]').click()
-        sleep(1)
-    except:
-        pass
+    def current_time(self):
+        return datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
+    def run(self):
+        try:
+            self.login()
+            now = datetime.now()
 
-def current_time(self):
-    return datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            # Fuel/CO2 every 30 minutes
+            if now.minute % 30 == 0:
+                self.fuel_check()
+                self.CO2_check()
 
+            # Depart flights every 5 minutes
+            if now.minute % 5 == 0:
+                self.depart_all()
 
-# ADD THE MISSING RUN METHOD
-def run(self):
-    try:
-        self.login()
-        now = datetime.now()
+            # Bulk repair at 00 minutes every 6 hours
+            if now.hour % 6 == 0 and now.minute == 0:
+                self.bulk_repair()
 
-        # Execute checks
-        self.fuel_check()
-        self.CO2_check()
-        self.depart_all()
+            print(f"{self.current_time()} - Tasks completed")
 
-        # Run repairs at 00 minutes every 6 hours
-        if now.hour % 6 == 0 and now.minute == 0:
-            self.bulk_repair()
-
-        print(f"{self.current_time()} - Tasks completed")
-
-    except Exception as e:
-        print(f"Error: {str(e)}")
-    finally:
-        self.driver.quit()
-
+        except Exception as e:
+            print(f"Error: {str(e)}")
+        finally:
+            self.driver.quit()
 
 if __name__ == "__main__":
     bot = AM4Bot()
